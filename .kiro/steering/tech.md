@@ -18,7 +18,7 @@ Any other runtime dependency. Say in the PR why the standard library wasn't enou
 
 ## Forbidden
 
-- Storing a certificate private key, an API key value, a password, or any secret in the inventory, the code, the tests, or the repo. The inventory holds names and dates. This is the whole security model and the security reviewer blocks on it.
+- Storing a certificate private key, an API key value, a password, or any secret in the inventory, the code, the tests, or the repo. The inventory holds names and dates. This is the whole security model.
 - Any code path that renews, rotates, or modifies the thing being tracked. This tool reads.
 - Cloud SDKs in the core. Integrations are a separate module, later, if ever.
 - Tests that hit the real network. Record the response once, replay it in the test.

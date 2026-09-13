@@ -44,7 +44,6 @@ Five incidents, and each one fails a different way. That's the important part. I
 | API keys, licenses, and similar have no queryable expiry and must be entered by hand | True by nature. Confirm by not finding a counterexample in the first five item types. | Nothing breaks. If some type turns out checkable, that's a feature later. |
 | A YAML file is a reasonable inventory format for a non-engineer to edit | Hand the sample file to someone who doesn't code and ask them to add a row | Switch to CSV. Small change. |
 | A webhook is enough for alerting in the first version | It is, by definition. Slack and email both accept webhooks. | Nothing. Native integrations are out of scope anyway. |
-| The swarm will catch real problems in this codebase | Run it on every PR. Count what it finds that I didn't. | The swarm needs work, not this project. That's a finding, not a failure. |
 
 ## Constraints
 
@@ -88,12 +87,12 @@ Chose A.
 
 > **Decision:** build it
 >
-> **Because:** the problem is universal, every incident I found has a distinct failure mode that a consolidated tracker addresses, the industry just made it measurably worse on a fixed schedule, and the first version is small enough to finish in two weeks. Also, it gives the swarm a real codebase with real security decisions in it (never store the secret, only its metadata), which is the second thing this project is for.
+> **Because:** the problem is universal, every incident I found has a distinct failure mode that a consolidated tracker addresses, the industry just made it measurably worse on a fixed schedule, and the first version is small enough to finish in two weeks.
 
 ### If you're building: what would make you stop
 
-> **Still worth it if:** by 2026-09-27 the tool reads an inventory of at least five items across at least three types, live-checks certificates and domains correctly against real hosts, prints a report a non-engineer could act on, and the swarm has reviewed at least three pull requests and caught at least one thing I didn't.
+> **Still worth it if:** by 2026-09-27 the tool reads an inventory of at least five items across at least three types, live-checks certificates and domains correctly against real hosts, and prints a report a non-engineer could act on.
 >
 > **Check by:** 2026-09-27
 >
-> If the live checks can't be made reliable, the tool is a spreadsheet with extra steps and I stop. If the swarm reviews three PRs and catches nothing, the swarm is the problem and I go fix that first.
+> If the live checks can't be made reliable, the tool is a spreadsheet with extra steps and I stop.

@@ -28,7 +28,7 @@ Proof of concept, in progress. Scope is in [engagement/03-scope.md](engagement/0
 | `AGENTS.md` | Working agreement for any AI agent that touches this code |
 | `.kiro/steering/` | Standards the agents follow |
 
-Generated from [project-starter](https://github.com/Cruzcodez/project-starter). Every pull request is reviewed by [agentic-swarm](https://github.com/Cruzcodez/agentic-swarm) before it merges.
+Built from [project-starter](https://github.com/Cruzcodez/project-starter). Pull requests are reviewed by [agentic-swarm](https://github.com/Cruzcodez/agentic-swarm) before they merge; what it caught is in `docs/review-log.md` once there's something to log.
 
 ## License
 
