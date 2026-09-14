@@ -12,16 +12,14 @@ manual and enter the date by hand. The report will say "inventory" for that item
 
 from __future__ import annotations
 
-import ipaddress
 import json
-import socket
 import urllib.error
-import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from datetime import date, datetime
 
 from ..models import Item
+from ..net import safe_opener
 
 RDAP_BASE = "https://rdap.org/domain/"
 DEFAULT_TIMEOUT = 10.0
@@ -33,62 +31,17 @@ USER_AGENT = "shelflife (+https://github.com/Cruzcodez/shelflife)"
 FetchJson = Callable[[str, float], tuple[int, str]]
 
 
-class RedirectError(RuntimeError):
-    """A redirect pointed somewhere this tool refuses to follow."""
-
-
 def fetch_url(url: str, timeout: float = DEFAULT_TIMEOUT) -> tuple[int, str]:
     """GET a URL and return (status, body). Redirects are followed only to public HTTPS hosts."""
     request = urllib.request.Request(
         url, headers={"Accept": "application/rdap+json", "User-Agent": USER_AGENT}
     )
-    opener = urllib.request.build_opener(_SafeRedirectHandler)
+    opener = safe_opener()
     try:
         with opener.open(request, timeout=timeout) as response:  # noqa: S310
             return response.status, _read_capped(response)
     except urllib.error.HTTPError as e:
         return e.code, _read_capped(e)
-
-
-class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """The first request goes to rdap.org, which answers with a redirect to the registry. That
-    redirect is third-party input. Following it blindly would let a bad redirect turn this tool
-    into a way to make requests at internal addresses from wherever it runs (cloud metadata
-    endpoints, private services). So a redirect is followed only if it's HTTPS to a public host."""
-
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        reason = redirect_refusal(newurl)
-        if reason:
-            raise RedirectError(f"refusing redirect to {newurl}: {reason}")
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
-
-
-Resolver = Callable[[str], list[str]]
-
-
-def _resolve(host: str) -> list[str]:
-    return [info[4][0] for info in socket.getaddrinfo(host, None)]
-
-
-def redirect_refusal(url: str, resolve: Resolver = _resolve) -> str | None:
-    """Return why a redirect target must not be followed, or None if it's fine."""
-    parts = urllib.parse.urlsplit(url)
-    if parts.scheme != "https":
-        return "not https"
-    host = parts.hostname
-    if not host:
-        return "no host"
-    try:
-        addresses = [ipaddress.ip_address(host)]
-    except ValueError:
-        try:
-            addresses = [ipaddress.ip_address(a) for a in resolve(host)]
-        except (socket.gaierror, ValueError) as e:
-            return f"could not resolve {host}: {e}"
-    for address in addresses:
-        if not address.is_global:
-            return f"{host} resolves to a non-public address ({address})"
-    return None
 
 
 def _read_capped(response) -> str:

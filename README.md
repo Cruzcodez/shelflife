@@ -52,11 +52,25 @@ The `SOURCE` column matters more than it looks. `inventory` means somebody typed
 
 Both checks time out after ten seconds. A host that does not answer becomes one `error` row and the rest of the report still runs.
 
+## Getting the report somewhere people look
+
+The exit code is the alert for cron and CI. For a chat channel, add a webhook:
+
+```bash
+shelflife check --webhook https://hooks.slack.com/services/...
+```
+
+or set `SHELFLIFE_WEBHOOK` in the environment and leave the flag off. When the exit code is `1` or `2`, the tool POSTs the same JSON that `--json` prints, with two extra fields, `text` and `content`, holding a one-line summary ("shelflife: 1 expired, 2 expiring within 30 days. Soonest: payments API key (payments@example.com) in 17 days."). Slack renders `text`, Discord renders `content`, and anything else gets the full report to do what it likes with. Nothing is posted when everything is fine, because a daily "all good" is how a channel gets muted. If you want the heartbeat anyway, add `--webhook-always`.
+
+Treat the URL like a password. Anyone who has a Slack incoming webhook URL can post to that channel. That is why it comes from a flag or an environment variable and never from the inventory file, and why it never appears in an error message.
+
+A post that fails prints one `error:` line. If the report had a real deadline in it the exit code stays `1`, because the deadline is still the thing that matters ([ADR 0002](docs/decisions/0002-exit-codes.md)); a failed heartbeat exits `2`.
+
 Unchecked and errored items sort to the top. They're the ones you can't reason about, and burying them under a long list of healthy rows is how they get missed.
 
 ## Status
 
-Proof of concept. What works: the inventory format, validation that refuses anything ambiguous, live checks for TLS certificates and domain registrations, the report, the exit codes. What doesn't yet: the webhook alert, which is the next pull request. Scope is in [engagement/03-scope.md](engagement/03-scope.md).
+Proof of concept, feature complete against [engagement/03-scope.md](engagement/03-scope.md): the inventory format, validation that refuses anything ambiguous, live checks for TLS certificates and domain registrations, the report, the exit codes, and the webhook. What it has not done yet is run for a month on a real inventory, which is the only test that says whether the alerts are useful or annoying. The "Not production ready" list in the scope document is honest about what that month might find.
 
 ## What's in here
 

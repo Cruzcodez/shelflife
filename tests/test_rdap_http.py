@@ -9,12 +9,8 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from shelflife.checkers.rdap import (
-    MAX_BODY_BYTES,
-    RedirectError,
-    fetch_url,
-    redirect_refusal,
-)
+from shelflife.checkers.rdap import MAX_BODY_BYTES, fetch_url
+from shelflife.net import RedirectError, redirect_refusal
 
 
 class Handler(BaseHTTPRequestHandler):
