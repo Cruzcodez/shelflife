@@ -22,6 +22,8 @@ from ..models import Item
 
 RDAP_BASE = "https://rdap.org/domain/"
 DEFAULT_TIMEOUT = 10.0
+# A domain object is a few kilobytes. Anything past this is not an answer we want to parse.
+MAX_BODY_BYTES = 1_000_000
 USER_AGENT = "expiry-tracker (+https://github.com/Cruzcodez/expiry-tracker)"
 
 # Seam for tests: something that takes a URL and returns (status, body text).
@@ -34,9 +36,18 @@ def fetch_url(url: str, timeout: float = DEFAULT_TIMEOUT) -> tuple[int, str]:
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
-            return response.status, response.read().decode("utf-8", errors="replace")
+            return response.status, _read_capped(response)
     except urllib.error.HTTPError as e:
-        return e.code, e.read().decode("utf-8", errors="replace")
+        return e.code, _read_capped(e)
+
+
+def _read_capped(response) -> str:
+    body = response.read(MAX_BODY_BYTES + 1)
+    if len(body) > MAX_BODY_BYTES:
+        raise RuntimeError(
+            f"RDAP response larger than {MAX_BODY_BYTES} bytes; refusing to parse it"
+        )
+    return body.decode("utf-8", errors="replace")
 
 
 def rdap_expiry(item: Item, fetch: FetchJson = fetch_url) -> date:

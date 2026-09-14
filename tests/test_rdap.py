@@ -1,6 +1,7 @@
 """The domain checker, against recorded RDAP responses. No network."""
 
 import unittest
+import urllib.error
 from datetime import date
 from pathlib import Path
 
@@ -59,6 +60,21 @@ class ExplainsFailures(unittest.TestCase):
     def test_no_expiration_event(self):
         body = '{"objectClassName": "domain", "events": [{"eventAction": "registration"}]}'
         self.assertFails(canned(200, body), "example.com", "no expiration event")
+
+    def test_network_failure(self):
+        def fetch(url, timeout):
+            raise urllib.error.URLError("connection refused")
+
+        self.assertFails(fetch, "example.com", "lookup for example.com failed")
+
+    def test_timeout(self):
+        def fetch(url, timeout):
+            raise TimeoutError()
+
+        self.assertFails(fetch, "example.com", "did not answer within")
+
+    def test_json_that_is_not_an_object(self):
+        self.assertFails(canned(200, "[1, 2, 3]"), "example.com", "not a domain object")
 
     def test_unreadable_date(self):
         payload = {"events": [{"eventAction": "expiration", "eventDate": "someday"}]}
