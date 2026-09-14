@@ -23,6 +23,8 @@ uv sync
 uv run expiry-tracker check --inventory inventory.example.yaml
 ```
 
+If you're going to change the code, use `uv sync --extra dev` instead. That's what CI installs, and it's what makes `scripts/check.sh` run the same checks locally that gate a pull request.
+
 That reads the example inventory and prints a table: what's expired, what's expiring within 30 days, what's fine, and what couldn't be checked. Change the window with `--days 14`. Get JSON with `--json`.
 
 The exit code is the point. `0` means nothing needs attention. `1` means something is expiring or already expired. `2` means something couldn't be checked. Put it in a cron job or a CI step and the non-zero exit is your alert, no parsing needed.

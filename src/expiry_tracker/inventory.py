@@ -1,8 +1,7 @@
 """Load and validate the inventory file.
 
-The inventory is YAML by default because that's what ops people edit. JSON is accepted too, with
-the same structure, because a script generating the inventory will find JSON easier to emit and
-the standard library reads it without a dependency.
+The inventory is YAML because that's what ops people edit. JSON with the same structure is also
+accepted; see engagement/03-scope.md, where that was added to scope after the first review.
 
 Validation is strict on purpose. A silently ignored item is an item that expires with nobody
 watching, which is the exact failure this tool exists to prevent.
@@ -52,17 +51,19 @@ def load(path: str | Path) -> list[Item]:
 def _read(path: Path) -> object:
     suffix = path.suffix.lower()
     text = path.read_text(encoding="utf-8")
-    if suffix == ".json":
-        return json.loads(text)
-    if suffix in (".yaml", ".yml"):
-        try:
-            import yaml  # noqa: PLC0415  (imported here so JSON users don't need PyYAML installed)
-        except ImportError as e:
-            raise InventoryError(
-                "reading YAML needs PyYAML. Install it (pip install pyyaml) "
-                "or use a .json inventory."
-            ) from e
-        return yaml.safe_load(text)
+    try:
+        if suffix == ".json":
+            return json.loads(text)
+        if suffix in (".yaml", ".yml"):
+            import yaml  # noqa: PLC0415  (kept local so the JSON path never touches it)
+
+            return yaml.safe_load(text)
+    except (json.JSONDecodeError, ValueError) as e:
+        raise InventoryError(f"{path}: not valid {suffix[1:].upper()}: {e}") from e
+    except Exception as e:  # PyYAML raises its own hierarchy; surface it the same way
+        if type(e).__module__.startswith("yaml"):
+            raise InventoryError(f"{path}: not valid YAML: {e}") from e
+        raise
     raise InventoryError(f"{path}: unsupported extension {suffix!r}; use .yaml, .yml, or .json")
 
 

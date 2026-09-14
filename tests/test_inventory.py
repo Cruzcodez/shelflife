@@ -9,9 +9,23 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from expiry_tracker.inventory import InventoryError, load
+from expiry_tracker.inventory import InventoryError, _parse_date, load
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+try:
+    import yaml  # noqa: F401
+
+    HAVE_YAML = True
+except ImportError:  # pragma: no cover - only true in a sandbox without the dependency
+    HAVE_YAML = False
+
+
+def write_text(text: str, suffix: str) -> Path:
+    f = tempfile.NamedTemporaryFile("w", suffix=suffix, delete=False, encoding="utf-8")
+    f.write(text)
+    f.close()
+    return Path(f.name)
 
 
 def write_json(payload: dict) -> Path:
@@ -69,6 +83,54 @@ class LoadsValidInventory(unittest.TestCase):
         item = load(p)[0]
         self.assertEqual(item.name, "spaced")
         self.assertEqual(item.owner, "o@example.com")
+
+
+class ParsesDates(unittest.TestCase):
+    # The loader sees two shapes for the same field: JSON gives a string, YAML gives a
+    # date object for an unquoted YYYY-MM-DD. Both must land on the same value.
+    def test_string_becomes_date(self):
+        self.assertEqual(_parse_date("2026-10-01", "x"), date(2026, 10, 1))
+
+    def test_date_object_passes_through(self):
+        self.assertEqual(_parse_date(date(2026, 10, 1), "x"), date(2026, 10, 1))
+
+    def test_other_types_are_refused(self):
+        with self.assertRaises(InventoryError) as ctx:
+            _parse_date(20261001, "x")
+        self.assertIn("must be a date", str(ctx.exception))
+
+
+@unittest.skipUnless(HAVE_YAML, "PyYAML not installed; run `uv sync --extra dev`")
+class LoadsYamlInventory(unittest.TestCase):
+    # YAML is the format the README tells people to write. It has to be tested end to
+    # end, not inferred from the JSON tests passing.
+    def test_yaml_and_json_fixtures_load_identically(self):
+        self.assertEqual(load(FIXTURES / "valid.yaml"), load(FIXTURES / "valid.json"))
+
+    def test_unquoted_yaml_date_is_accepted(self):
+        p = write_text(
+            "items:\n  - name: k\n    type: api-key\n    owner: o\n    expires: 2026-10-01\n",
+            ".yaml",
+        )
+        self.assertEqual(load(p)[0].expires, date(2026, 10, 1))
+
+    def test_yml_extension_works_too(self):
+        p = write_text(
+            "items:\n  - name: k\n    type: api-key\n    owner: o\n    expires: '2026-10-01'\n",
+            ".yml",
+        )
+        self.assertEqual(load(p)[0].name, "k")
+
+    def test_malformed_yaml_is_an_inventory_error(self):
+        p = write_text("items:\n  - name: [unclosed\n", ".yaml")
+        with self.assertRaises(InventoryError) as ctx:
+            load(p)
+        self.assertIn("not valid YAML", str(ctx.exception))
+
+    def test_empty_yaml_file_is_an_inventory_error(self):
+        # yaml.safe_load("") returns None, which is not an inventory.
+        with self.assertRaises(InventoryError):
+            load(write_text("", ".yaml"))
 
 
 class RejectsBrokenInventory(unittest.TestCase):
@@ -137,6 +199,10 @@ class RejectsBrokenInventory(unittest.TestCase):
             }
         )
         self.assertRejects(p, "duplicate")
+
+    def test_malformed_json_is_an_inventory_error(self):
+        # A user with a typo should get a one-line message, not a traceback.
+        self.assertRejects(write_text('{"items": [', ".json"), "not valid JSON")
 
     def test_unsupported_extension(self):
         f = tempfile.NamedTemporaryFile("w", suffix=".toml", delete=False)
