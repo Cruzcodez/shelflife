@@ -25,7 +25,7 @@ uv run expiry-tracker check --inventory inventory.example.yaml
 
 If you're going to change the code, use `uv sync --extra dev` instead. That's what CI installs, and it's what makes `scripts/check.sh` run the same checks locally that gate a pull request.
 
-That reads the example inventory and prints a table: what's expired, what's expiring within 30 days, what's fine, and what couldn't be checked. Change the window with `--days 14`. Get JSON with `--json`.
+That reads the example inventory, checks the certificate on `example.com` and the registration of `example.com` live, and prints a table: what's expired, what's expiring within 30 days, what's fine, and what couldn't be checked. Change the window with `--days 14`. Get JSON with `--json`. Add `--offline` to skip the live checks and just read the file.
 
 The exit code is the point. `0` means nothing needs attention. `1` means something is expiring or already expired. `2` means something couldn't be checked. Put it in a cron job or a CI step and the non-zero exit is your alert, no parsing needed.
 
@@ -42,13 +42,21 @@ JSON works too, same structure, if a script is generating it.
 
 ## Reading the report
 
-The `SOURCE` column matters more than it looks. `inventory` means somebody typed that date and nothing has verified it. `live` means the tool checked just now. `unchecked` means it's a live type but the checker isn't built yet. `error` means the check was attempted and failed, and the reason is right there in the row.
+The `SOURCE` column matters more than it looks. `inventory` means somebody typed that date and nothing has verified it. `live` means the tool checked just now. `unchecked` means it's a live type but the check was skipped (`--offline`). `error` means the check was attempted and failed, and the reason is right there in the row.
+
+## How the live checks work
+
+**`tls`**: the tool connects to the host and port, completes a TLS handshake, reads the expiry date off the certificate the server presents, and disconnects. It sends nothing else. It does not verify the certificate, on purpose: an expired or self-signed certificate is exactly what you want reported, and verification would refuse it before the date could be read. [ADR 0003](docs/decisions/0003-tls-checker-does-not-verify.md) has the reasoning.
+
+**`domain`**: the tool asks [RDAP](https://about.rdap.org/), the registry protocol that replaced WHOIS, when the registration expires. Not every top-level domain has an RDAP server (`.de` is a well-known example). When that happens the report says so and tells you to track that domain with a manual date instead: change its type to something like `domain-manual` and give it an `expires` line.
+
+Both checks time out after ten seconds. A host that does not answer becomes one `error` row and the rest of the report still runs.
 
 Unchecked and errored items sort to the top. They're the ones you can't reason about, and burying them under a long list of healthy rows is how they get missed.
 
 ## Status
 
-Proof of concept. What works: the inventory format, validation that refuses anything ambiguous, the report, the exit codes. What doesn't yet: the live checks. Every `tls` and `domain` item currently reports as `unchecked`. That's the next pull request. Scope is in [engagement/03-scope.md](engagement/03-scope.md).
+Proof of concept. What works: the inventory format, validation that refuses anything ambiguous, live checks for TLS certificates and domain registrations, the report, the exit codes. What doesn't yet: the webhook alert, which is the next pull request. Scope is in [engagement/03-scope.md](engagement/03-scope.md).
 
 ## What's in here
 
@@ -60,7 +68,7 @@ Proof of concept. What works: the inventory format, validation that refuses anyt
 | `AGENTS.md` | Working agreement for any AI agent that touches this code |
 | `.kiro/steering/` | Standards the agents follow |
 
-Built from [project-starter](https://github.com/Cruzcodez/project-starter). Pull requests are reviewed by [agentic-swarm](https://github.com/Cruzcodez/agentic-swarm) before they merge; what it caught is in `docs/review-log.md` once there's something to log.
+Built from [project-starter](https://github.com/Cruzcodez/project-starter). Pull requests are reviewed by [agentic-swarm](https://github.com/Cruzcodez/agentic-swarm) before they merge; what it caught is in [docs/review-log.md](docs/review-log.md).
 
 ## License
 

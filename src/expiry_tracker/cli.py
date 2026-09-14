@@ -14,12 +14,9 @@ import sys
 from datetime import date
 
 from . import __version__
+from .checkers import CHECKERS
 from .inventory import InventoryError, load
 from .report import evaluate, exit_code, render_json, render_table
-
-# Live checkers register here as they're added. Empty means every live item reports as
-# "unchecked", visibly, rather than silently trusting a date somebody typed.
-CHECKERS: dict = {}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -46,6 +43,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check.add_argument("--json", action="store_true", help="output JSON instead of a table")
     check.add_argument(
+        "--offline",
+        action="store_true",
+        help="skip live checks; live items report as unchecked (exit code 2)",
+    )
+    check.add_argument(
         "--today", type=date.fromisoformat, default=None, help=argparse.SUPPRESS
     )  # for tests and for "what would this look like next month"
     return p
@@ -63,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 2
 
-    results = evaluate(items, CHECKERS)
+    results = evaluate(items, {} if args.offline else CHECKERS)
     output = render_json if args.json else render_table
     sys.stdout.write(output(results, today, args.days))
     return exit_code(results, today, args.days)
