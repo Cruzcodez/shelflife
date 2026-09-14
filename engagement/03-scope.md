@@ -1,7 +1,7 @@
 # 3. Scope
 
 **Date:** 2026-09-13
-**Confirmed with:** _Chris Cruz, ____ (read it, then sign it)_
+**Confirmed with:** **Confirmed with:** Chris Cruz, 2026-09-14
 
 ---
 
