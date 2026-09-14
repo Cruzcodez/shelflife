@@ -1,7 +1,7 @@
 """Command line entry point.
 
-    expiry-tracker check --inventory inventory.yaml --days 30
-    expiry-tracker check --inventory inventory.yaml --json > report.json
+    shelflife check --inventory inventory.yaml --days 30
+    shelflife check --inventory inventory.yaml --json > report.json
 
 Exit code is 0 when nothing needs attention, 1 when something is expiring or expired, and 2 when
 something couldn't be checked. That's so a cron job or a CI step can act on it with no parsing.
@@ -21,7 +21,7 @@ from .report import evaluate, exit_code, render_json, render_table
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="expiry-tracker",
+        prog="shelflife",
         description="Report on everything in your inventory that's about to expire.",
     )
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")

@@ -1,6 +1,6 @@
-# expiry-tracker
+# shelflife
 
-One place that knows about everything you have that expires, and tells you before it does.
+Everything you own has a shelf life. This is the one place that knows all of them, and tells you before one runs out.
 
 Certificates, domains, API keys, licenses, contracts. They live in different systems, get tracked by different people, and the one that takes you down is always the one nobody owned. This is a command-line tool that keeps one inventory of all of them, checks the ones it can check live, and reports what's coming due with an owner next to each.
 
@@ -20,7 +20,7 @@ You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/). From a fresh
 
 ```bash
 uv sync
-uv run expiry-tracker check --inventory inventory.example.yaml
+uv run shelflife check --inventory inventory.example.yaml
 ```
 
 If you're going to change the code, use `uv sync --locked --extra dev` instead. That's what CI installs, and it's what makes `scripts/check.sh` run the same checks locally that gate a pull request. `--locked` means you get exactly the versions in `uv.lock`; if you add a dependency, run `uv lock` and commit the result.

@@ -8,8 +8,8 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from expiry_tracker import cli
-from expiry_tracker.cli import main
+from shelflife import cli
+from shelflife.cli import main
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
