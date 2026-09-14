@@ -50,3 +50,72 @@ One defect in the swarm itself. scope-reviewer handed a finding to an agent call
 ### What the human did that the swarm did not
 
 Two things. The swarm noted that the scope document's "confirmed with" line was still a blank placeholder. It was right, but that was a process step waiting on Chris, not a code change; he signed it before this PR merged. And the swarm did not question whether the whole PR was too big for one review. Fourteen files is at the edge. Next PR is smaller.
+
+---
+
+## PR 3: live checks for TLS certificates and domain registrations
+
+**Reviewed:** 2026-09-14
+**Agents that ran:** security-reviewer, docs-reviewer, infra-reviewer, test-reviewer, scope-reviewer (merged by swarm)
+**Verdict:** BLOCK
+**Wall clock:** 5 minutes 28 seconds for all five agents plus the merge
+**Diff size:** 13 files, roughly 700 lines added
+
+(PR 2 was the lock file, one commit, no swarm review. It was itself a swarm finding from PR 1.)
+
+### Findings
+
+| # | Severity | Finding | Agent | Outcome | Would have missed? |
+|---|----------|---------|-------|---------|--------------------|
+| 1 | Blocking | The TLS checker's timeout branch had no test, and it is the one failure mode the README promises to handle. | test-reviewer | Accepted: injected `TimeoutError` test | Yes. |
+| 2 | Blocking | The RDAP checker's network-failure and timeout branches were untested; every test fed it a canned response, none made the fetch raise. | test-reviewer | Accepted: two injected-exception tests | Yes. |
+| 3 | Blocking | Valid JSON of the wrong shape (an array) hit an untested guard. | test-reviewer | Accepted | Probably. |
+| 4 | Blocking | The DER parser's length-field validation was untested. The reviewer's point: this PR is what makes that parser reachable from an unverified network peer, so its defensive branches are the most important lines in the diff to prove. | test-reviewer | Accepted: bad-length, indefinite-length tests | Yes, and this is the best finding of the review. I tested the happy path with real certificates and the obvious junk, and skipped the branch that matters for hostile input. |
+| 5 | Blocking | Two error branches in the time parser untested. | test-reviewer | Accepted, plus a direct test of both time encodings | Probably. |
+| 6 | Should fix | The RDAP response body was read with no size cap. A misbehaving server could exhaust memory on the machine running the cron job. | security-reviewer | Accepted: 1 MB cap, refused with a message past that | Yes. |
+| 7 | Should fix | Depending on `rdap.org`, a third-party redirector, is a boundary decision of the same weight as the no-verify choice that got ADR 0003, and it only had a docstring. | docs-reviewer | Accepted: ADR 0004 | Yes. I had made the decision carefully and not written it down, which is the exact failure ADR 0001 exists to stop. |
+| 8 | Should fix | `--offline` is new user-facing surface not in the scope document. | scope-reviewer | Accepted: one line in scope, dated | No, but I would have skipped it. |
+| 9 | Should fix | `test_unresolvable_host` did a real DNS lookup, against the scope rule that checker tests never touch the network. | test-reviewer | Accepted: injected `gaierror` | No. I knew and let it slide. The reviewer did not. |
+| 10 | Handoff | Does the CI runner have `openssl`? If not, the real-handshake tests skip silently and coverage drops with no signal. | test-reviewer, docs-reviewer | Accepted: the tests now fail in CI (`CI=true`) when `openssl` is missing, and still skip locally | Yes. |
+| 11 | Handoff | No review-log entry for this PR yet. | test-reviewer | No change needed: the entry is written after the review, which is this. | n/a |
+
+**Totals:** 5 blocking, 4 should fix, 2 handoffs. 10 accepted, 0 deferred, 0 overridden, 1 no change needed. Would have missed: 6 of 10.
+
+### Confirmed non-issues
+
+security-reviewer reviewed the DER parser specifically as attacker-reachable input and found every read bounds-checked. security-reviewer and scope-reviewer both independently checked `CERT_NONE` against ADR 0003 and accepted it. docs-reviewer confirmed README, ADR 0003, and the checker code agree on timeouts, flags, fallback behavior, and exit codes.
+
+### Overrides
+
+None.
+
+### What changed in the swarm because of this PR
+
+Nothing in the charters. The roster fix from PR 1 held: scope-reviewer and test-reviewer both handed findings to real agents this time, and the merge step listed the two that nobody confirmed under "Handoffs nobody picked up" with the right names.
+
+One thing in how the swarm was run. test-reviewer reported it could not execute the test suite because the harness did not grant it shell approval, and scope-reviewer reconstructed the diff from `.git/logs/HEAD` because it had no git access. Both said so plainly under Noted instead of pretending, which is what the contract asks. But a test reviewer that cannot run tests is reviewing with one eye shut. Next run gets an explicit tool allowlist so the agents can run `git`, `python`, and `uv`. That is a runner concern, tracked in the agentic-swarm repo.
+
+### Second pass, after the fixes
+
+The fixed branch went back through the swarm, this time via `scripts/review.sh` with a tool allowlist. Verdict: BLOCK again, and this pass is the more interesting one.
+
+| # | Severity | Finding | Agent | Outcome | Would have missed? |
+|---|----------|---------|-------|---------|--------------------|
+| 12 | Blocking | The RDAP fetch followed redirects with no check on where they go. security-reviewer proved it experimentally: a `302` to `http://127.0.0.1:<port>/` was followed. Since the first hop is a third-party redirector by design (ADR 0004), a bad redirect turns the tool into a way to make requests at internal addresses from wherever the cron job runs, cloud metadata endpoints included. | security-reviewer | Accepted: redirects are now followed only to HTTPS hosts whose addresses are all public; IP literals are checked without resolving; tests drive the real fetch against a local server that redirects to loopback, to `169.254.169.254`, and to plain HTTP, and all three are refused before any request goes out | Yes. This is the finding of the day. I wrote ADR 0004 about the redirector being *down* and never thought about it being *wrong*. |
+| 13 | Blocking | The real `fetch_url`, including the 1 MB cap added in the first pass, had no test at all. Every RDAP test injected a stand-in fetch. The cap could regress and nothing would fail. | test-reviewer | Accepted: `tests/test_rdap_http.py` runs a local HTTP server and drives the real function through headers, error bodies, and an oversized body | Yes. I fixed the cap and tested the parser, not the cap. |
+| 14 | Blocking | `uv sync --locked` with no `uv.lock` in the repo. | infra-reviewer, test-reviewer | No change needed: an artifact of the review environment. The copy the swarm reviewed was taken from a sandbox that could not fetch PR 2 (the lock file), so from where it stood the finding was true and it reproduced it by running the command. On GitHub and on the machine the branch was built on, the lock file is there. Recorded because a reviewer that reproduces its finding is doing the right thing even when the environment is lying to it. | n/a |
+| 15 | Should fix | README said CI installs with `uv sync --extra dev`; it now uses `--locked`. | docs-reviewer | Accepted | No. |
+| 16 | Should fix | Fixture README said the openssl tests skip when it's missing, which is only true locally; in CI they fail. | docs-reviewer | Accepted | Probably. |
+| 17 | Should fix | `--offline` was added to scope with a note but not the pending-reconfirmation flag the JSON change got. | scope-reviewer | Accepted: folded into the same pending line | No. |
+| 18 | Should fix | `fetch_certificate`'s "handshake but no certificate" guard was untested through the function itself. | test-reviewer | Accepted: the handshake is behind a seam and the guard has a direct test | Probably. |
+| 19 | Should fix | Nothing in CI states or checks that `openssl` is on the runner. | infra-reviewer | Accepted: one `openssl version` step | No, but cheap. |
+
+**Second pass totals:** 3 blocking, 5 should fix. 7 accepted, 1 no change needed, 0 overridden. Would have missed: 4 of 7.
+
+**Both passes, this PR:** 8 blocking, 9 should fix, 2 handoffs. 17 accepted, 2 no change needed, 0 overridden. Would have missed: 10 of 17. 91 tests at the end, up from 67 when the PR was first reviewed.
+
+The swarm also wrote, under "Noticed while merging," that the review log entry in the diff claimed everything had been found and fixed, that every agent was told not to trust that narrative, and that they verified it independently. That paragraph is the best argument for running a second pass I have seen: the log said "done," and the swarm treated "done" as a claim to check.
+
+### What the human did that the swarm did not
+
+Chose the approach. The swarm cannot tell you that Python's `ssl` module refuses to hand back an expired certificate, or that the fix is forty lines of DER walking instead of a dependency. It can only tell you whether the forty lines are tested. It did, twice, and the second time it found the hole the first time made possible.

@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-13
 **Confirmed with:** Chris Cruz, 2026-09-14
-**Scope change pending:** JSON input format, added 2026-09-14. Re-confirm by updating the date above.
+**Scope change pending:** JSON input format and the `--offline` flag, both added 2026-09-14. Re-confirm by updating the date above.
 
 ---
 
@@ -18,6 +18,7 @@ A command-line tool that keeps one inventory of everything that expires (certifi
 - [ ] Live check for domain registrations via RDAP. Falls back to a manual date if the TLD doesn't support it.
 - [ ] Manual-date items for everything else: API keys, licenses, contracts, warranties, whatever.
 - [ ] `check` command: report everything expiring within N days (default 30), sorted soonest first, showing type, name, owner, days left, and whether the date was checked live or taken from the inventory.
+- [ ] `check --offline`: same report with the live checks skipped, so the inventory can be read on a machine with no network. **Added 2026-09-14** during the live-checks PR; it fell out of keeping the tests off the network and was cheap to expose.
 - [ ] Exit code: nonzero if anything is inside the warning window, so it works as a cron job or a CI step with no extra wiring.
 - [ ] One alert output beyond the terminal: a generic webhook POST with the report as JSON. Slack, Discord, Teams, and email gateways all accept one.
 - [ ] A sample inventory that works out of the box against public hosts, so `git clone` then `check` produces a real report in under a minute.

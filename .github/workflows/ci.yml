@@ -28,6 +28,11 @@ jobs:
       - name: Install
         run: uv sync --locked --extra dev
 
+      # The TLS tests generate a throwaway certificate with openssl. The runner image ships
+      # it today; this makes an image change an obvious failure instead of a buried one.
+      - name: Confirm openssl is available
+        run: openssl version
+
       - name: Run checks
         run: uv run ./scripts/check.sh
 
