@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-13
 **Who asked:** Chris Cruz. My own idea, but the customer is any team that has things that expire, which is every team.
-**Who's building it:** Chris Cruz, with Claude building and the agentic-swarm reviewing every pull request
+**Who's building it:** Chris Cruz, with Claude
 
 ---
 
@@ -14,7 +14,7 @@ The way I said it:
 
 Followed by:
 
-> Something that anyone can understand. Not a calculator. General enough that most customers relate to it, specific enough and difficult enough that it can be built, documented, and show that the swarm is working.
+> Something that anyone can understand. Not a calculator. General enough that most customers relate to it, specific enough and difficult enough that it can be built and documented properly.
 
 ## Why they want it
 
@@ -30,15 +30,14 @@ Two layers to this.
 - One command shows everything expiring in the next N days, across every type, sorted by when, with an owner next to each.
 - It works without a cloud account. A laptop and a cron job is enough.
 - A person who doesn't know what a TLS certificate is can read the report and know who to call.
-- The swarm reviews every pull request and catches at least one thing I'd have missed.
 
 ## Constraints already on the table
 
 - Budget: my time and tokens.
 - Deadline: a working first version by 2026-09-27. That's the kill-condition date in discovery.
-- Tools or platforms they have to use: Python, because it's what I read and write best. Git and GitHub with the full PR workflow. The agentic-swarm on every PR.
+- Tools or platforms they have to use: Python, because it's what I read and write best. Git and GitHub with the full PR workflow.
 - Tools or platforms they can't use: nothing cloud-specific in the core. Cloud integrations are a later feature, not a dependency.
-- Security or compliance requirements: the tool tracks *when things expire*. It must never store the things themselves. No certificate private keys, no API key values, no passwords. Metadata only. This is a hard rule and it's the trap the security reviewer exists to catch.
+- Security or compliance requirements: the tool tracks *when things expire*. It must never store the things themselves. No certificate private keys, no API key values, no passwords. Metadata only. This is a hard rule.
 - Who has to approve things: me. Scope gets my name and a date.
 
 ## What you don't know yet

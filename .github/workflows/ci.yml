@@ -19,5 +19,18 @@ jobs:
           # Full history so the secret scan can see what's actually tracked.
           fetch-depth: 0
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Install
+        run: uv sync --extra dev
+
       - name: Run checks
-        run: ./scripts/check.sh
+        run: uv run ./scripts/check.sh
+
+  # CI runs the same script you run locally. If you find yourself adding steps
+  # here that aren't in check.sh, put them in check.sh instead — otherwise
+  # "green locally" and "green in CI" stop meaning the same thing.

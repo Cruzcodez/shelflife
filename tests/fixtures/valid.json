@@ -1,0 +1,14 @@
+{
+  "items": [
+    {"name": "web TLS", "type": "tls", "owner": "platform@example.com",
+     "check": {"host": "example.com", "port": 443}},
+    {"name": "example.com registration", "type": "domain", "owner": "it@example.com",
+     "check": {"domain": "example.com"}},
+    {"name": "payments API key", "type": "api-key", "owner": "payments@example.com",
+     "expires": "2026-10-01", "note": "rotate in dashboard"},
+    {"name": "tracker license", "type": "license", "owner": "it@example.com",
+     "expires": "2027-03-31"},
+    {"name": "old contract", "type": "contract", "owner": "ops@example.com",
+     "expires": "2026-01-01"}
+  ]
+}

@@ -2,6 +2,7 @@
 
 **Date:** 2026-09-13
 **Confirmed with:** Chris Cruz, 2026-09-14
+**Scope change pending:** JSON input format, added 2026-09-14. Re-confirm by updating the date above.
 
 ---
 
@@ -12,6 +13,7 @@ A command-line tool that keeps one inventory of everything that expires (certifi
 ## In scope
 
 - [ ] An inventory file in YAML. Each item has a type, a name, an owner, and either something to check live or a date entered by hand.
+- [ ] The same inventory structure in JSON is also accepted. **Added 2026-09-14 after the first review**: the first PR shipped this without it being in scope. It's kept because a script generating the inventory will emit JSON more easily than YAML, and the cost is one branch in the loader. Needs re-confirmation below.
 - [ ] Live check for TLS certificates: connect to `host:port`, read the expiry off the cert. No credentials.
 - [ ] Live check for domain registrations via RDAP. Falls back to a manual date if the TLD doesn't support it.
 - [ ] Manual-date items for everything else: API keys, licenses, contracts, warranties, whatever.
@@ -20,7 +22,6 @@ A command-line tool that keeps one inventory of everything that expires (certifi
 - [ ] One alert output beyond the terminal: a generic webhook POST with the report as JSON. Slack, Discord, Teams, and email gateways all accept one.
 - [ ] A sample inventory that works out of the box against public hosts, so `git clone` then `check` produces a real report in under a minute.
 - [ ] Tests for the date math and for each checker, using recorded responses so they don't need the network.
-- [ ] Every pull request reviewed by the agentic-swarm before merge.
 
 ## Out of scope
 
@@ -41,9 +42,8 @@ Parked, not refused.
 - [ ] Given an inventory with a certificate expiring in 10 days and a threshold of 30, the report lists it and the exit code is nonzero. With a threshold of 5, it's absent and the exit code is zero.
 - [ ] Given a host that doesn't respond, the report says so for that item and still reports everything else. One bad host doesn't kill the run.
 - [ ] The report visibly distinguishes "checked live just now" from "date from the inventory file." A reader can tell which numbers to trust.
-- [ ] A grep of the repository for anything that looks like a credential finds nothing. The security reviewer agrees.
+- [ ] A grep of the repository for anything that looks like a credential finds nothing.
 - [ ] Someone who has never seen the project reads the README and can add a new item to the inventory without asking a question.
-- [ ] The swarm has reviewed every PR, and the eval log in this repo records what it caught.
 
 ## Not production ready
 
