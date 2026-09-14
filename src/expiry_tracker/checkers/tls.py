@@ -24,6 +24,13 @@ FetchCert = Callable[[str, int, float], bytes]
 
 def fetch_certificate(host: str, port: int, timeout: float = DEFAULT_TIMEOUT) -> bytes:
     """Do a real TLS handshake with host:port and return the leaf certificate as DER bytes."""
+    der = _handshake(host, port, timeout)
+    if not der:
+        raise RuntimeError(f"{host}:{port} completed a handshake but presented no certificate")
+    return der
+
+
+def _handshake(host: str, port: int, timeout: float) -> bytes | None:
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
@@ -31,10 +38,7 @@ def fetch_certificate(host: str, port: int, timeout: float = DEFAULT_TIMEOUT) ->
         socket.create_connection((host, port), timeout=timeout) as raw,
         context.wrap_socket(raw, server_hostname=host) as tls,
     ):
-        der = tls.getpeercert(binary_form=True)
-    if not der:
-        raise RuntimeError(f"{host}:{port} completed a handshake but presented no certificate")
-    return der
+        return tls.getpeercert(binary_form=True)
 
 
 def tls_expiry(item: Item, fetch: FetchCert = fetch_certificate) -> date:

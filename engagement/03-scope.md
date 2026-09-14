@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-13
 **Confirmed with:** Chris Cruz, 2026-09-14
-**Scope change pending:** JSON input format, added 2026-09-14. Re-confirm by updating the date above.
+**Scope change pending:** JSON input format and the `--offline` flag, both added 2026-09-14. Re-confirm by updating the date above.
 
 ---
 

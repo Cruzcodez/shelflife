@@ -13,6 +13,7 @@ import threading
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 from expiry_tracker.checkers.tls import fetch_certificate, tls_expiry
 from expiry_tracker.models import Item
@@ -209,6 +210,14 @@ class ExplainsFailures(unittest.TestCase):
 
         with self.assertRaises(CertificateError):
             tls_expiry(tls_item("h", 443), fetch)
+
+    def test_handshake_that_presents_no_certificate(self):
+        # A TLS server can complete a handshake without a certificate (anonymous cipher suites).
+        # fetch_certificate must say so instead of handing empty bytes to the parser.
+        with patch("expiry_tracker.checkers.tls._handshake", return_value=b""):
+            with self.assertRaises(RuntimeError) as ctx:
+                fetch_certificate("h.example", 8443, timeout=1)
+        self.assertIn("presented no certificate", str(ctx.exception))
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ uv sync
 uv run expiry-tracker check --inventory inventory.example.yaml
 ```
 
-If you're going to change the code, use `uv sync --extra dev` instead. That's what CI installs, and it's what makes `scripts/check.sh` run the same checks locally that gate a pull request.
+If you're going to change the code, use `uv sync --locked --extra dev` instead. That's what CI installs, and it's what makes `scripts/check.sh` run the same checks locally that gate a pull request. `--locked` means you get exactly the versions in `uv.lock`; if you add a dependency, run `uv lock` and commit the result.
 
 That reads the example inventory, checks the certificate on `example.com` and the registration of `example.com` live, and prints a table: what's expired, what's expiring within 30 days, what's fine, and what couldn't be checked. Change the window with `--days 14`. Get JSON with `--json`. Add `--offline` to skip the live checks and just read the file.
 
