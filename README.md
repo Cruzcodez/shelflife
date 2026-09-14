@@ -1,10 +1,34 @@
 # shelflife
 
+[![CI](https://github.com/Cruzcodez/shelflife/actions/workflows/ci.yml/badge.svg)](https://github.com/Cruzcodez/shelflife/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Reviewed by agentic-swarm](https://img.shields.io/badge/reviewed%20by-agentic--swarm-8A2BE2)](docs/review-log.md)
+
 Everything you own has a shelf life. This is the one place that knows all of them, and tells you before one runs out.
+
+[Install](#running-it) • [The inventory](#the-inventory) • [Reading the report](#reading-the-report) • [Webhook](#getting-the-report-somewhere-people-look) • [When not to use this](#when-not-to-use-this) • [Decisions](docs/decisions/)
 
 Certificates, domains, API keys, licenses, contracts. They live in different systems, get tracked by different people, and the one that takes you down is always the one nobody owned. This is a command-line tool that keeps one inventory of all of them, checks the ones it can check live, and reports what's coming due with an owner next to each.
 
 It watches. It never renews anything, and it never stores the secret itself. Names and dates only.
+
+```
+$ shelflife check --inventory inventory.example.yaml --days 60
+STATUS    DAYS  EXPIRES     TYPE      NAME                             OWNER                 SOURCE
+--------  ----  ----------  --------  -------------------------------  --------------------  ---------
+EXPIRING  43    2026-10-27  tls       example.com TLS certificate      platform@example.com  live
+OK        123   2027-01-15  api-key   Payment provider live API key    payments@example.com  inventory
+OK        198   2027-03-31  license   Issue tracker annual license     it@example.com        inventory
+OK        333   2027-08-13  domain    example.com domain registration  it@example.com        live
+OK        655   2028-06-30  contract  Office lease                     ops@example.com       inventory
+
+5 items. 1 within 60 days or already expired. 0 could not be checked. Today is 2026-09-14.
+$ echo $?
+1
+```
+
+Real output, run on 2026-09-14. The two `live` rows were checked against example.com just then; the three `inventory` rows are dates somebody typed. The exit code is `1` because something needs attention within the window. `0` means nothing does, `2` means something could not be checked. That is the whole integration story for cron and CI.
 
 ## Why this exists
 
@@ -16,12 +40,14 @@ The full reasoning, with sources, is in [engagement/02-discovery.md](engagement/
 
 ## Running it
 
-You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/). From a fresh clone:
+You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/). Install it as a tool, straight from this repository:
 
 ```bash
-uv sync
-uv run shelflife check --inventory inventory.example.yaml
+uv tool install git+https://github.com/Cruzcodez/shelflife@v0.1.0
+shelflife check --inventory inventory.example.yaml
 ```
+
+Or run it once without installing anything: `uvx --from git+https://github.com/Cruzcodez/shelflife@v0.1.0 shelflife check -i inventory.example.yaml`. Drop the `@v0.1.0` to track `main` instead of a release. From a clone, `uv sync` then `uv run shelflife ...` does the same thing.
 
 If you're going to change the code, use `uv sync --locked --extra dev` instead. That's what CI installs, and it's what makes `scripts/check.sh` run the same checks locally that gate a pull request. `--locked` means you get exactly the versions in `uv.lock`; if you add a dependency, run `uv lock` and commit the result.
 
@@ -72,14 +98,44 @@ Unchecked and errored items sort to the top. They're the ones you can't reason a
 
 Proof of concept, feature complete against [engagement/03-scope.md](engagement/03-scope.md): the inventory format, validation that refuses anything ambiguous, live checks for TLS certificates and domain registrations, the report, the exit codes, and the webhook. What it has not done yet is run for a month on a real inventory, which is the only test that says whether the alerts are useful or annoying. The "Not production ready" list in the scope document is honest about what that month might find.
 
+## When not to use this
+
+Naming the alternatives is more useful than pretending they don't exist.
+
+- **You already run Prometheus.** Use [ssl_exporter](https://github.com/ribbybibby/ssl_exporter) or [x509-certificate-exporter](https://github.com/enix/x509-certificate-exporter). They are built for that world, ship alert rules and dashboards, and if shelflife ever grows a `--prometheus` flag it will only ever be the basics.
+- **You want a dashboard and a status page.** [Uptime Kuma](https://github.com/louislam/uptime-kuma) and [Gatus](https://github.com/TwiN/gatus) both check certificate expiry, Gatus checks domain expiry too, and both give you a UI, notifications to forty services, and a server to keep running. shelflife deliberately has no server.
+- **You need one certificate checked once.** `openssl s_client -connect host:443 | openssl x509 -noout -enddate` is right there. shelflife earns its keep when there is a list, the list has owners, and something has to run it every day.
+- **You want the tool to renew things.** That is a different tool with a different security story. See the [scope document](engagement/03-scope.md) for why.
+
+What none of those do, and why this exists: one inventory for every kind of expiring thing, not only certificates, with an owner next to each, no server, no stored secrets, and an exit code that any scheduler already understands. The comparison against 51 repositories that informed this section is in [docs/landscape.md](docs/landscape.md).
+
+## Where it could go next
+
+Things people have asked for, in the order I'd do them. None of them are promises.
+
+**A page instead of a terminal.** Most people who would care about this report are not going to run a command to see it. The plan that keeps the tool's shape: `--html report.html` writes one self-contained page with the same rows as the table, and a scheduled GitHub Actions job publishes it, so the report lives at a URL that is always current with no server to run. A dashboard with a backend stays out of scope; the reasons in [engagement/03-scope.md](engagement/03-scope.md) still hold.
+
+**Cloud inventories.** Today the inventory is a file you write. The obvious next step is sources that write it for you: certificates from a cloud provider's certificate service, domains from its DNS service, one source per provider, so a team with more than one cloud gets one report. This is the first feature that would need credentials, read-only ones, and the security story gets written before the code. It is version two, with its own scope document, not a pull request.
+
+**Prometheus output.** `--prometheus` writing the same rows as `days_until_expiry{name=...,type=...,owner=...}` gauges, for teams that scrape everything. One function; the Go tools in this space are all Prometheus-first and it is the lingua franca there.
+
+**Retry, bootstrap, signing.** The smaller items in the handoff's not-production-ready table: one retry on flaky checks, RDAP's bootstrap lookup instead of the redirector, a signature on the webhook payload. Each is a half day and none is needed until someone hits the problem.
+
+If you want one of these, open an issue and say what you'd use it for. That's the input that decides the order.
+
 ## What's in here
 
 | Path | What |
 | --- | --- |
 | `engagement/` | Why this exists, what was found, what's in and out of scope, and (later) how to take it over |
 | `docs/decisions/` | Decisions that would be expensive to reverse, recorded as they're made |
+| `docs/review-log.md` | Every swarm review, finding by finding, with what got accepted and what a human would have missed |
+| `docs/landscape.md` | The 51 repositories this was compared against before going public, and what that changed |
 | `scripts/check.sh` | The one command that says whether the repo is healthy. CI runs exactly this. |
 | `AGENTS.md` | Working agreement for any AI agent that touches this code |
+| `CONTRIBUTING.md` | How to run the checks and what a pull request needs |
+| `SECURITY.md` | How to report a problem, and what this tool does and does not trust |
+| `CHANGELOG.md` | What changed, by version |
 | `.kiro/steering/` | Standards the agents follow |
 
 Built from [project-starter](https://github.com/Cruzcodez/project-starter). Pull requests are reviewed by [agentic-swarm](https://github.com/Cruzcodez/agentic-swarm) before they merge; what it caught is in [docs/review-log.md](docs/review-log.md).
