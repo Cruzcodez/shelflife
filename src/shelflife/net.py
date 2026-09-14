@@ -1,10 +1,17 @@
 """HTTP rules shared by everything in this tool that talks to the network.
 
-One rule, applied everywhere: a redirect is followed only if it points at HTTPS on a host whose
-addresses are all public. The first request goes wherever the operator or the RDAP redirector
-said; the redirect is third-party input, and following it blindly would let a bad redirect turn
-this tool into a way to make requests at internal addresses (cloud metadata endpoints, private
-services) from wherever it runs.
+One rule for redirects, applied everywhere: a redirect is followed only if it points at HTTPS
+on a host whose addresses are all public. A redirect is third-party input, and following it
+blindly would let a bad redirect turn this tool into a way to make requests at internal
+addresses (cloud metadata endpoints, private services) from wherever it runs.
+
+The first request is the caller's responsibility. The RDAP checker hardcodes its base URL; the
+webhook requires HTTPS and a host before it sends anything (`webhook.url_problem`).
+
+Known limit: a host is resolved once here to check its addresses, and again by the connection.
+A name that answers public at the first lookup and private at the second (DNS rebinding) would
+get through. Closing that means connecting to the checked address directly and setting SNI by
+hand, which is more machinery than a daily cron job warrants. Recorded in the handoff document.
 """
 
 from __future__ import annotations

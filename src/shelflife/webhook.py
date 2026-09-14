@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from datetime import date
@@ -94,6 +95,9 @@ def send(
     post: Poster = post_json,
 ) -> None:
     """POST the report to url. Raises WebhookError, with no URL in the message, on any failure."""
+    problem = url_problem(url)
+    if problem:
+        raise WebhookError(f"webhook URL {problem}")
     body = build_payload(results, today, threshold_days)
     try:
         status = post(url, body, DEFAULT_TIMEOUT)
@@ -105,5 +109,21 @@ def send(
         raise WebhookError(f"webhook could not be reached: {e.reason}") from e
     except TimeoutError as e:
         raise WebhookError(f"webhook did not answer within {DEFAULT_TIMEOUT:g}s") from e
-    if not 200 <= status < 300:
+    except Exception as e:  # noqa: BLE001  (whatever it was, the URL must not leak in a traceback)
+        raise WebhookError(f"webhook post failed: {type(e).__name__}") from e
+    if not isinstance(status, int) or not 200 <= status < 300:
         raise WebhookError(f"webhook returned HTTP {status}")
+
+
+def url_problem(url: str) -> str | None:
+    """Why a webhook URL is unusable, or None. The webhook is the one place an operator types a
+    URL, so it gets checked before anything is sent: HTTPS only (which also rules out file:// and
+    plain-HTTP to a private address), and it has to have a host."""
+    if not url or not url.strip():
+        return "is empty"
+    parts = urllib.parse.urlsplit(url.strip())
+    if parts.scheme != "https":
+        return "must start with https://"
+    if not parts.hostname:
+        return "has no host"
+    return None

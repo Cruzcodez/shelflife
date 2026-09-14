@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 from shelflife import cli
 from shelflife.models import Item, Result
+from shelflife.net import RedirectError
 from shelflife.webhook import WebhookError, build_payload, post_json, send, summary_line
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -97,6 +98,26 @@ class SendFailures(unittest.TestCase):
 
         self.assertFailsWithout(post, "did not answer")
 
+    def test_malformed_url_is_a_clean_error(self):
+        for bad in ("", "   ", "hooks.example/services/secret-part", "http://hooks.example/x"):
+            with self.subTest(url=bad), self.assertRaises(WebhookError) as ctx:
+                send(bad, [manual("k", "o", TODAY)], TODAY, 30, lambda u, b, t: 200)
+            self.assertIn("webhook URL", str(ctx.exception))
+            self.assertNotIn("secret-part", str(ctx.exception))
+
+    def test_file_scheme_is_refused(self):
+        with self.assertRaises(WebhookError):
+            send("file:///etc/hostname", [manual("k", "o", TODAY)], TODAY, 30)
+
+    def test_unexpected_exception_does_not_leak_the_url(self):
+        def post(u, b, t):
+            raise ValueError(f"unknown url type: {u}")
+
+        self.assertFailsWithout(post, "webhook post failed: ValueError")
+
+    def test_non_integer_status_is_a_failure(self):
+        self.assertFailsWithout(lambda u, b, t: None, "returned HTTP None")
+
     def test_success_is_silent(self):
         seen = []
         send(self.URL, [manual("k", "o", TODAY)], TODAY, 30, lambda u, b, t: seen.append(u) or 204)
@@ -150,10 +171,19 @@ class RealPost(unittest.TestCase):
         self.assertEqual(Handler.received[0]["body"], b'{"text": "hi"}')
 
     def test_redirect_to_a_private_address_is_refused(self):
-        with self.assertRaises(WebhookError) as ctx:
-            send(self.base + "/redirect", [manual("k", "o", TODAY)], TODAY, 30)
-        self.assertIn("refuses to follow", str(ctx.exception))
+        # send() would refuse this plain-http URL before posting, so drive the transport directly
+        # to prove the redirect rule holds on the POST path too.
+        with self.assertRaises(RedirectError):
+            post_json(self.base + "/redirect", b"{}", timeout=5)
         self.assertEqual(len(Handler.received), 1)  # nothing was posted to the redirect target
+
+    def test_redirect_error_becomes_a_clean_webhook_error(self):
+        def post(u, b, t):
+            return post_json(self.base + "/redirect", b, t)
+
+        with self.assertRaises(WebhookError) as ctx:
+            send("https://hooks.example/x", [manual("k", "o", TODAY)], TODAY, 30, post)
+        self.assertIn("refuses to follow", str(ctx.exception))
 
 
 def run(*argv, env=None):
@@ -204,6 +234,38 @@ class CliWiring(unittest.TestCase):
                 send_mock.assert_called_once()
         finally:
             fine.unlink()
+
+    def test_flag_wins_over_environment(self):
+        with patch("shelflife.cli.send") as send_mock:
+            run(
+                *self.ARGS,
+                "--webhook",
+                "https://hooks.example/flag",
+                env={"SHELFLIFE_WEBHOOK": "https://hooks.example/env"},
+            )
+        self.assertEqual(send_mock.call_args.args[0], "https://hooks.example/flag")
+
+    def test_failed_post_on_an_exit_two_run_stays_two(self):
+        # valid.json with --offline has unchecked live items but also an expired item, so build
+        # an inventory whose only trouble is an unchecked live item.
+        only_live = FIXTURES.parent / "fixtures" / "live-only.json"
+        only_live.write_text(
+            '{"items": [{"name": "t", "type": "tls", "owner": "o", "check": {"host": "h"}}]}'
+        )
+        try:
+            with patch("shelflife.cli.send", side_effect=WebhookError("webhook returned HTTP 500")):
+                code, _, err = run(
+                    "check",
+                    "-i",
+                    str(only_live),
+                    "--offline",
+                    "--webhook",
+                    "https://hooks.example/x",
+                )
+        finally:
+            only_live.unlink()
+        self.assertEqual(code, 2)
+        self.assertIn("error: webhook", err)
 
     def test_failed_post_keeps_exit_one_but_reports(self):
         with patch("shelflife.cli.send", side_effect=WebhookError("webhook returned HTTP 500")):
