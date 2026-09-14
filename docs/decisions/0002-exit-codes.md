@@ -7,11 +7,11 @@
 
 The people this tool is for (discovery in [engagement/02-discovery.md](../../engagement/02-discovery.md)) do not want another dashboard to remember to look at. They want the thing that is about to expire to show up wherever they already are: a cron email, a failed CI job, a chat message. The cheapest way to plug into all of those at once is a process exit code. Every scheduler and every CI system already treats non-zero as "tell someone."
 
-That only works if the codes mean one thing, forever. A script written today against `expiry-tracker check` has to keep working after the live checks land, after the report format changes, and after whatever comes next. So the exit codes are a contract, and a contract needs to be written down somewhere the code can't quietly drift away from.
+That only works if the codes mean one thing, forever. A script written today against `shelflife check` has to keep working after the live checks land, after the report format changes, and after whatever comes next. So the exit codes are a contract, and a contract needs to be written down somewhere the code can't quietly drift away from.
 
 ## Decision
 
-`expiry-tracker check` returns exactly one of three codes:
+`shelflife check` returns exactly one of three codes:
 
 | Code | Meaning | What to do |
 |------|---------|------------|
@@ -27,7 +27,7 @@ The warning window is `--days`, default 30. Changing the default would change wh
 
 ## Consequences
 
-- A cron entry like `expiry-tracker check || mail -s "expiry" ops@example.com` is a complete alerting setup. No wrapper script, no parsing.
+- A cron entry like `shelflife check || mail -s "expiry" ops@example.com` is a complete alerting setup. No wrapper script, no parsing.
 - The three codes must stay stable across every future change. A new failure mode has to fit into `2`, not get its own number. If that ever becomes too coarse, that is a new ADR, not a quiet edit.
 - The precedence rule means a run with one expiring item and ten broken checks exits `1`. Anyone who needs to catch the broken checks separately reads the `--json` output, where every item carries its own `status`.
 - Tests in `tests/test_report.py` and `tests/test_cli.py` pin all three codes and the precedence rule. If those tests change, this document changes with them.

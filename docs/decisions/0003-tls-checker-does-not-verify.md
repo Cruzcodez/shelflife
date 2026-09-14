@@ -13,7 +13,7 @@ Verification also fails when the hostname does not match, which happens when the
 
 ## Decision
 
-The checker builds its own `SSLContext` with `check_hostname = False` and `verify_mode = CERT_NONE`, sends SNI so virtual hosts answer with the right certificate, takes the certificate in raw DER form with `getpeercert(binary_form=True)`, and reads `notAfter` with a small purpose-built parser in `src/expiry_tracker/x509.py`.
+The checker builds its own `SSLContext` with `check_hostname = False` and `verify_mode = CERT_NONE`, sends SNI so virtual hosts answer with the right certificate, takes the certificate in raw DER form with `getpeercert(binary_form=True)`, and reads `notAfter` with a small purpose-built parser in `src/shelflife/x509.py`.
 
 Nothing is sent or received over the connection after the handshake. The tool closes the socket as soon as it has the certificate bytes.
 
@@ -26,4 +26,4 @@ Verification protects data that flows over a connection. This connection carries
 - Expired, self-signed, and hostname-mismatched certificates all report their real expiry date, which is the behavior an inventory tool needs.
 - The tool cannot tell you whether a certificate is trusted, only when it expires. That is the scope. Trust checking is a different tool.
 - A security reviewer reading `CERT_NONE` will flag it. That is a good instinct and this document is the answer. The code comment points here.
-- `src/expiry_tracker/x509.py` exists because Python's standard library has no certificate parser for the unverified case. It reads one field and refuses anything it does not understand. If it ever needs to read a second field, that is the moment to consider a real dependency such as `cryptography` instead of growing it.
+- `src/shelflife/x509.py` exists because Python's standard library has no certificate parser for the unverified case. It reads one field and refuses anything it does not understand. If it ever needs to read a second field, that is the moment to consider a real dependency such as `cryptography` instead of growing it.

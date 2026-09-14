@@ -1,4 +1,4 @@
-# expiry-tracker inventory
+# shelflife inventory
 #
 # One entry per thing that expires. Every entry has a name, a type, and an owner. Then either:
 #   - a `check` block, for types the tool can look up live (tls, domain), or

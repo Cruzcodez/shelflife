@@ -9,12 +9,8 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from expiry_tracker.checkers.rdap import (
-    MAX_BODY_BYTES,
-    RedirectError,
-    fetch_url,
-    redirect_refusal,
-)
+from shelflife.checkers.rdap import MAX_BODY_BYTES, fetch_url
+from shelflife.net import RedirectError, redirect_refusal
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -74,7 +70,7 @@ class LocalHttp(unittest.TestCase):
         self.assertEqual(json.loads(body), {"events": []})
         sent = Handler.seen_headers[0]
         self.assertEqual(sent["Accept"], "application/rdap+json")
-        self.assertIn("expiry-tracker", sent["User-Agent"])
+        self.assertIn("shelflife", sent["User-Agent"])
 
     def test_error_status_returns_its_body(self):
         status, body = fetch_url(self.base + "/missing", timeout=5)

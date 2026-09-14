@@ -11,7 +11,7 @@
 ├── docs/
 │   └── decisions/                  # ADRs, numbered, immutable
 ├── scripts/check.sh                # the single health command
-├── src/expiry_tracker/             # the package: inventory, checkers, report, cli
+├── src/shelflife/             # the package: inventory, checkers, report, cli
 ├── tests/                          # pytest, with recorded responses under tests/fixtures/
 ├── AGENTS.md                       # working agreement + definition of done
 ├── README.md                       # problem, scope, architecture, limits

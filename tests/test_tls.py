@@ -15,9 +15,9 @@ from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
-from expiry_tracker.checkers.tls import fetch_certificate, tls_expiry
-from expiry_tracker.models import Item
-from expiry_tracker.x509 import CertificateError, _parse_time, not_after
+from shelflife.checkers.tls import fetch_certificate, tls_expiry
+from shelflife.models import Item
+from shelflife.x509 import CertificateError, _parse_time, not_after
 
 OPENSSL = shutil.which("openssl")
 
@@ -214,7 +214,7 @@ class ExplainsFailures(unittest.TestCase):
     def test_handshake_that_presents_no_certificate(self):
         # A TLS server can complete a handshake without a certificate (anonymous cipher suites).
         # fetch_certificate must say so instead of handing empty bytes to the parser.
-        with patch("expiry_tracker.checkers.tls._handshake", return_value=b""):
+        with patch("shelflife.checkers.tls._handshake", return_value=b""):
             with self.assertRaises(RuntimeError) as ctx:
                 fetch_certificate("h.example", 8443, timeout=1)
         self.assertIn("presented no certificate", str(ctx.exception))

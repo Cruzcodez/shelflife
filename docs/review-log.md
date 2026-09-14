@@ -119,3 +119,40 @@ The swarm also wrote, under "Noticed while merging," that the review log entry i
 ### What the human did that the swarm did not
 
 Chose the approach. The swarm cannot tell you that Python's `ssl` module refuses to hand back an expired certificate, or that the fix is forty lines of DER walking instead of a dependency. It can only tell you whether the forty lines are tested. It did, twice, and the second time it found the hole the first time made possible.
+
+---
+
+## PR 4: rename to shelflife, webhook alert, and the handoff document
+
+**Reviewed:** 2026-09-14
+**Agents that ran:** security-reviewer, docs-reviewer, infra-reviewer, test-reviewer, scope-reviewer (merged by swarm), via `scripts/review.sh`
+**Verdict:** BLOCK
+**Wall clock:** 6 minutes 16 seconds
+**Diff size:** 8 files, roughly 500 lines added
+
+The rename commit is mechanical and rode along in the same pull request; the swarm reviewed the webhook diff on its own.
+
+### Findings
+
+| # | Severity | Finding | Agent | Outcome | Would have missed? |
+|---|----------|---------|-------|---------|--------------------|
+| 1 | Blocking | A webhook URL with a typo (no `https://`, or empty) made `urllib` raise a bare `ValueError` that nothing caught. The process crashed with a traceback containing the full URL, which the module docstring had just promised never happens, and the exit code was neither 0, 1, nor 2. Both agents reproduced it. | security-reviewer, test-reviewer | Accepted: the URL is validated before anything is sent (HTTPS only, host required, empty refused); any other exception in the post becomes a `WebhookError` naming the exception type and nothing else; tests for each | Yes. I tested every failure I could think of and not the one a person actually makes, a typo. |
+| 2 | Should fix | The shared redirect rule only guards redirects; the webhook's initial URL was unchecked, so `file:///etc/passwd` opened successfully (with a `None` status that then crashed the status check). | security-reviewer | Accepted: same fix as 1, plus a non-integer status is now a clean failure; `net.py`'s docstring no longer claims "one rule, applied everywhere" and says who checks the first request | Yes. |
+| 3 | Should fix | Exit-code precedence when the webhook fails on a run that was already 2 was correct but unpinned by a test. | test-reviewer | Accepted | No. |
+| 4 | Should fix | Flag-over-environment precedence for the URL was untested. | test-reviewer | Accepted | Probably. |
+| 5 | Handoff | README now says "feature complete against scope" while `04-handoff.md` was still the blank template. | scope-reviewer | Accepted: the handoff was being written while the review ran; it's in this PR | No. |
+| 6 | Noted | DNS rebinding: a redirect target is resolved once for the check and again for the connection. Pre-existing, not a regression. | security-reviewer | Recorded in the handoff's not-production-ready table and in `net.py`, with what it would take to close | Yes. |
+
+**Totals:** 1 blocking, 3 should fix, 1 handoff, 1 noted. All accepted, 0 overridden. Would have missed: 3 of 5.
+
+### Confirmed non-issues
+
+The swarm confirmed the `net.py` extraction preserved the redirect logic verbatim with tests intact; that the webhook is in scope and needs no new ADR; that keeping the URL out of the inventory upholds the existing rule; and that the README's webhook section matches the code. test-reviewer ran the suite (107 at review time, 114 after fixes).
+
+### What the human did that the swarm did not
+
+Decided that a failed post on a run with a real deadline keeps exit `1`. The swarm confirmed it matched ADR 0002 and moved on. Whether that's the right call is an open question in the handoff, and the answer will come from a month of cron, not from a reviewer.
+
+### Running total, four pull requests
+
+30 findings from four swarm passes: 12 blocking, 16 should fix, 2 handoffs. 27 accepted, 1 deferred then done, 2 no change needed, 0 overridden. Author's count of would-have-missed: 18 of 30.

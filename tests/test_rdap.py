@@ -5,8 +5,8 @@ import urllib.error
 from datetime import date
 from pathlib import Path
 
-from expiry_tracker.checkers.rdap import RDAP_BASE, expiration_from, rdap_expiry
-from expiry_tracker.models import Item
+from shelflife.checkers.rdap import RDAP_BASE, expiration_from, rdap_expiry
+from shelflife.models import Item
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

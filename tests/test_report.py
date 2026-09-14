@@ -4,8 +4,8 @@ import json
 import unittest
 from datetime import date
 
-from expiry_tracker.models import Item, Result
-from expiry_tracker.report import evaluate, exit_code, render_json, render_table, sort_for_report
+from shelflife.models import Item, Result
+from shelflife.report import evaluate, exit_code, render_json, render_table, sort_for_report
 
 TODAY = date(2026, 9, 14)
 

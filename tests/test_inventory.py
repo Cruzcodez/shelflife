@@ -9,7 +9,7 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from expiry_tracker.inventory import InventoryError, _parse_date, load
+from shelflife.inventory import InventoryError, _parse_date, load
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
