@@ -1,8 +1,7 @@
 # 3. Scope
 
 **Date:** 2026-09-13
-**Confirmed with:** Chris Cruz, 2026-09-14
-**Scope change pending:** JSON input format and the `--offline` flag, both added 2026-09-14. Re-confirm by updating the date above.
+**Confirmed with:** Chris Cruz, 2026-09-14 (re-confirmed the same day, after the JSON input and `--offline` additions below)
 
 ---
 
@@ -13,7 +12,7 @@ A command-line tool that keeps one inventory of everything that expires (certifi
 ## In scope
 
 - [ ] An inventory file in YAML. Each item has a type, a name, an owner, and either something to check live or a date entered by hand.
-- [ ] The same inventory structure in JSON is also accepted. **Added 2026-09-14 after the first review**: the first PR shipped this without it being in scope. It's kept because a script generating the inventory will emit JSON more easily than YAML, and the cost is one branch in the loader. Needs re-confirmation below.
+- [ ] The same inventory structure in JSON is also accepted. **Added 2026-09-14 after the first review**: the first PR shipped this without it being in scope. It's kept because a script generating the inventory will emit JSON more easily than YAML, and the cost is one branch in the loader. Re-confirmed 2026-09-14.
 - [ ] Live check for TLS certificates: connect to `host:port`, read the expiry off the cert. No credentials.
 - [ ] Live check for domain registrations via RDAP. Falls back to a manual date if the TLD doesn't support it.
 - [ ] Manual-date items for everything else: API keys, licenses, contracts, warranties, whatever.
