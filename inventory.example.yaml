@@ -1,0 +1,40 @@
+# expiry-tracker inventory
+#
+# One entry per thing that expires. Every entry has a name, a type, and an owner. Then either:
+#   - a `check` block, for types the tool can look up live (tls, domain), or
+#   - an `expires` date, for everything else (api-key, license, contract, warranty, anything).
+#
+# Never put the thing itself in here. No certificate keys, no API key values, no passwords.
+# This file holds names and dates. That's the whole security model, and it's why it's safe to
+# commit and share.
+
+items:
+  - name: example.com TLS certificate
+    type: tls
+    owner: platform@example.com
+    check:
+      host: example.com
+      port: 443
+
+  - name: example.com domain registration
+    type: domain
+    owner: it@example.com
+    check:
+      domain: example.com
+
+  - name: Payment provider live API key
+    type: api-key
+    owner: payments@example.com
+    expires: 2027-01-15
+    note: Rotate in the provider dashboard. The key value lives in the secrets manager, not here.
+
+  - name: Issue tracker annual license
+    type: license
+    owner: it@example.com
+    expires: 2027-03-31
+
+  - name: Office lease
+    type: contract
+    owner: ops@example.com
+    expires: 2028-06-30
+    note: 90-day notice period. Start the conversation by 2028-03-31.

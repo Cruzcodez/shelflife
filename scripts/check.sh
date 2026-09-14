@@ -25,15 +25,20 @@ else
 fi
 
 step "Project checks"
-if [ -f package.json ]; then
-  npm run --silent lint  2>/dev/null || warn "no lint script"
-  npm run --silent test  2>/dev/null || { echo "tests failed or missing"; fail=1; }
-elif [ -f pyproject.toml ] || [ -f requirements.txt ]; then
-  command -v ruff   >/dev/null && ruff check . || warn "ruff not installed"
-  command -v pytest >/dev/null && pytest -q     || { echo "tests failed or missing"; fail=1; }
+# ruff for lint and formatting, then the tests. pytest is the intended runner (it's in the dev
+# extras), but the tests are written so `python -m unittest` runs them too, so a machine without
+# pytest still gets a real answer instead of a skipped step.
+if command -v ruff >/dev/null; then
+  ruff check src tests    || fail=1
+  ruff format --check src tests >/dev/null || { echo "run: ruff format src tests"; fail=1; }
 else
-  warn "No project checks defined yet."
-  warn "Replace this block with real ones before this repo means anything."
+  warn "ruff not installed; lint skipped"
+fi
+if command -v pytest >/dev/null; then
+  pytest -q || fail=1
+else
+  warn "pytest not installed; falling back to unittest"
+  PYTHONPATH=src python3 -m unittest discover -s tests -q || fail=1
 fi
 
 echo

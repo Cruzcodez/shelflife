@@ -14,9 +14,39 @@ And it's getting worse on a schedule. The CA/Browser Forum cut TLS certificate l
 
 The full reasoning, with sources, is in [engagement/02-discovery.md](engagement/02-discovery.md).
 
+## Running it
+
+You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/). From a fresh clone:
+
+```bash
+uv sync
+uv run expiry-tracker check --inventory inventory.example.yaml
+```
+
+That reads the example inventory and prints a table: what's expired, what's expiring within 30 days, what's fine, and what couldn't be checked. Change the window with `--days 14`. Get JSON with `--json`.
+
+The exit code is the point. `0` means nothing needs attention. `1` means something is expiring or already expired. `2` means something couldn't be checked. Put it in a cron job or a CI step and the non-zero exit is your alert, no parsing needed.
+
+## The inventory
+
+One entry per thing that expires. Copy `inventory.example.yaml` and edit it. Every entry has a name, a type, and an owner, then either:
+
+- a `check` block, for the types the tool can look up live: `tls` (a host and port) and `domain` (a domain name)
+- an `expires` date, for everything else: `api-key`, `license`, `contract`, `warranty`, any word you like
+
+The file holds names and dates. It never holds the thing itself. No certificate keys, no API key values, no passwords. That's the whole security model and it's what makes the inventory safe to commit.
+
+JSON works too, same structure, if a script is generating it.
+
+## Reading the report
+
+The `SOURCE` column matters more than it looks. `inventory` means somebody typed that date and nothing has verified it. `live` means the tool checked just now. `unchecked` means it's a live type but the checker isn't built yet. `error` means the check was attempted and failed, and the reason is right there in the row.
+
+Unchecked and errored items sort to the top. They're the ones you can't reason about, and burying them under a long list of healthy rows is how they get missed.
+
 ## Status
 
-Proof of concept, in progress. Scope is in [engagement/03-scope.md](engagement/03-scope.md). Nothing to run yet.
+Proof of concept. What works: the inventory format, validation that refuses anything ambiguous, the report, the exit codes. What doesn't yet: the live checks. Every `tls` and `domain` item currently reports as `unchecked`. That's the next pull request. Scope is in [engagement/03-scope.md](engagement/03-scope.md).
 
 ## What's in here
 
