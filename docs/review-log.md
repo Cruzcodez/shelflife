@@ -156,3 +156,37 @@ Decided that a failed post on a run with a real deadline keeps exit `1`. The swa
 ### Running total, four pull requests
 
 30 findings from four swarm passes: 12 blocking, 16 should fix, 2 handoffs. 27 accepted, 1 deferred then done, 2 no change needed, 0 overridden. Author's count of would-have-missed: 18 of 30.
+
+---
+
+## PR 5: what a public repository is expected to have
+
+**Reviewed:** 2026-09-14
+**Agents that ran:** all five, via `scripts/review.sh`
+**Verdict:** BLOCK
+**Wall clock:** 4 minutes 44 seconds
+**Diff size:** 7 files, documentation and metadata only, no code
+
+Included here because a docs-only diff got blocked for two real reasons, and because it is the first review where test-reviewer returned a clean PASS on the grounds that nothing testable changed, which the merge report called "a real PASS, not a shrug."
+
+### Findings
+
+| # | Severity | Finding | Agent | Outcome | Would have missed? |
+|---|----------|---------|-------|---------|--------------------|
+| 1 | Blocking | README, CONTRIBUTING, and SECURITY all describe a `uv sync --locked` workflow and there was no `uv.lock` in the copy reviewed. | docs-reviewer | No change needed: the sandbox copy again. Fixed at the source this time by copying the real lock file into the review environment so this stops recurring. | n/a |
+| 2 | Blocking | CHANGELOG and README say "feature complete against scope" while the scope document itself still carries a "pending re-confirmation" flag for JSON input and `--offline`, with the confirmed-with date untouched. The release was making a claim the scope document contradicted. | scope-reviewer | Accepted: Chris re-confirmed both in writing, the scope date is signed, and the changelog says so instead of "feature complete." | Yes. I wrote "feature complete" three times without rereading the document that defines it. |
+| 3 | Should fix | The install one-liner pulled from an unpinned `git+` URL, so it installed whatever `main` was, not the `v0.1.0` the same README documents, and no tag existed. | security-reviewer, infra-reviewer | Accepted: install lines pin `@v0.1.0`, with "drop it to track main" spelled out; the tag is cut with the release. | Probably. |
+| 4 | Should fix | `docs/landscape.md` said 21 repositories in the table; the table had 19. | docs-reviewer | Accepted: two archived projects are named as excluded. | Yes. I counted what I read, not what I listed. |
+| 5 | Should fix | `--prometheus` described as "(planned)" in one section and hedged with "none of these are promises" in another. | scope-reviewer | Accepted: same hedge in both places. | No. |
+| 6 | Handoff | The review copy's git remote still pointed at the old repository name. | security-reviewer | No change needed: the sandbox copy; GitHub was renamed hours earlier. | n/a |
+| 7 | Noted | SECURITY.md claimed Dependabot watches dependencies and there was no `dependabot.yml`. | docs-reviewer | Accepted: alerts were on in repository settings; the file now exists too, so the claim is true on disk as well. | Probably. |
+
+**Totals:** 2 blocking, 3 should fix, 1 handoff, 1 noted. 5 accepted, 2 no change needed, 0 overridden. Would have missed: 3 of 5.
+
+### What the swarm did that surprised me
+
+docs-reviewer checked the terminal output in the README against `inventory.example.yaml` and the date math by hand, and reported it "internally consistent." Then it noted that whether the block is "genuinely real output" is a claim no test can verify. It is real (see the screenshot in the pull request), but the reviewer was right that the README asserts something it cannot prove, and right not to pretend otherwise.
+
+### Running total, five pull requests
+
+37 findings from five swarm passes: 14 blocking, 19 should fix, 3 handoffs, 1 noted. 32 accepted, 1 deferred then done, 4 no change needed, 0 overridden. Author's count of would-have-missed: 21 of 33 actionable.

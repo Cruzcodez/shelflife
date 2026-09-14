@@ -20,4 +20,4 @@ You will get an acknowledgement within a few days. This is one person's project,
 
 ## Dependencies
 
-One runtime dependency, PyYAML, loaded with `safe_load`. Everything else is the Python standard library. Versions are pinned in `uv.lock` and Dependabot watches them.
+One runtime dependency, PyYAML, loaded with `safe_load`. Everything else is the Python standard library. Versions are pinned in `uv.lock`; Dependabot alerts are enabled on the repository and `.github/dependabot.yml` asks for update pull requests weekly.

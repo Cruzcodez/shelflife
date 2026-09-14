@@ -1,6 +1,6 @@
 # Landscape
 
-What else exists, and how shelflife compares. Written 2026-09-14, before the repository went public, from a read of 51 repositories: 21 in shelflife's own space (certificate and domain expiry monitoring), 10 security and operations CLIs, 10 widely admired command-line tools, and 10 well-regarded Python projects. Star counts are as of that day and will drift. The point is not the numbers, it is what the field does and does not do.
+What else exists, and how shelflife compares. Written 2026-09-14, before the repository went public, from a read of 51 repositories: 21 in shelflife's own space (certificate and domain expiry monitoring; 19 appear in the table below, and two that are archived, Netflix's lemur and RaymiiOrg's certificate-expiry-monitor, are left out of it), 10 security and operations CLIs, 10 widely admired command-line tools, and 10 well-regarded Python projects. Star counts are as of that day and will drift. The point is not the numbers, it is what the field does and does not do.
 
 ## The tools that do the same job
 

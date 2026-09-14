@@ -1,0 +1,12 @@
+# Weekly pull requests for dependency updates. Small project, small blast radius, so one
+# batch a week is plenty. Security alerts are separate and are on in the repository settings.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

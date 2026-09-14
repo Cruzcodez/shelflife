@@ -4,7 +4,7 @@ Versions follow [semantic versioning](https://semver.org/). Anything before 1.0 
 
 ## 0.1.0 - 2026-09-14
 
-First release. Feature complete against [engagement/03-scope.md](engagement/03-scope.md).
+First release. Everything in [engagement/03-scope.md](engagement/03-scope.md) is built; the two additions made along the way (JSON input, `--offline`) were re-confirmed in that document on the day of this release.
 
 - Inventory file in YAML or JSON: every item has a name, a type, and an owner, plus either a `check` block for live types or an `expires` date. Validation refuses anything ambiguous.
 - Live check for TLS certificates: real handshake, expiry read off the raw certificate, no chain verification so expired and self-signed certificates still report ([ADR 0003](docs/decisions/0003-tls-checker-does-not-verify.md)).

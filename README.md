@@ -43,11 +43,11 @@ The full reasoning, with sources, is in [engagement/02-discovery.md](engagement/
 You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/). Install it as a tool, straight from this repository:
 
 ```bash
-uv tool install git+https://github.com/Cruzcodez/shelflife
+uv tool install git+https://github.com/Cruzcodez/shelflife@v0.1.0
 shelflife check --inventory inventory.example.yaml
 ```
 
-Or run it once without installing anything: `uvx --from git+https://github.com/Cruzcodez/shelflife shelflife check -i inventory.example.yaml`. From a clone, `uv sync` then `uv run shelflife ...` does the same thing.
+Or run it once without installing anything: `uvx --from git+https://github.com/Cruzcodez/shelflife@v0.1.0 shelflife check -i inventory.example.yaml`. Drop the `@v0.1.0` to track `main` instead of a release. From a clone, `uv sync` then `uv run shelflife ...` does the same thing.
 
 If you're going to change the code, use `uv sync --locked --extra dev` instead. That's what CI installs, and it's what makes `scripts/check.sh` run the same checks locally that gate a pull request. `--locked` means you get exactly the versions in `uv.lock`; if you add a dependency, run `uv lock` and commit the result.
 
@@ -102,7 +102,7 @@ Proof of concept, feature complete against [engagement/03-scope.md](engagement/0
 
 Naming the alternatives is more useful than pretending they don't exist.
 
-- **You already run Prometheus.** Use [ssl_exporter](https://github.com/ribbybibby/ssl_exporter) or [x509-certificate-exporter](https://github.com/enix/x509-certificate-exporter). They are built for that world, ship alert rules and dashboards, and shelflife's `--prometheus` output (planned) will only ever be the basics.
+- **You already run Prometheus.** Use [ssl_exporter](https://github.com/ribbybibby/ssl_exporter) or [x509-certificate-exporter](https://github.com/enix/x509-certificate-exporter). They are built for that world, ship alert rules and dashboards, and if shelflife ever grows a `--prometheus` flag it will only ever be the basics.
 - **You want a dashboard and a status page.** [Uptime Kuma](https://github.com/louislam/uptime-kuma) and [Gatus](https://github.com/TwiN/gatus) both check certificate expiry, Gatus checks domain expiry too, and both give you a UI, notifications to forty services, and a server to keep running. shelflife deliberately has no server.
 - **You need one certificate checked once.** `openssl s_client -connect host:443 | openssl x509 -noout -enddate` is right there. shelflife earns its keep when there is a list, the list has owners, and something has to run it every day.
 - **You want the tool to renew things.** That is a different tool with a different security story. See the [scope document](engagement/03-scope.md) for why.
