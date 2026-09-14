@@ -72,6 +72,18 @@ Unchecked and errored items sort to the top. They're the ones you can't reason a
 
 Proof of concept, feature complete against [engagement/03-scope.md](engagement/03-scope.md): the inventory format, validation that refuses anything ambiguous, live checks for TLS certificates and domain registrations, the report, the exit codes, and the webhook. What it has not done yet is run for a month on a real inventory, which is the only test that says whether the alerts are useful or annoying. The "Not production ready" list in the scope document is honest about what that month might find.
 
+## Where it could go next
+
+Things people have asked for, in the order I'd do them. None of them are promises.
+
+**A page instead of a terminal.** Most people who would care about this report are not going to run a command to see it. The plan that keeps the tool's shape: `--html report.html` writes one self-contained page with the same rows as the table, and a scheduled GitHub Actions job publishes it, so the report lives at a URL that is always current with no server to run. A dashboard with a backend stays out of scope; the reasons in [engagement/03-scope.md](engagement/03-scope.md) still hold.
+
+**Cloud inventories.** Today the inventory is a file you write. The obvious next step is sources that write it for you: certificates from a cloud provider's certificate service, domains from its DNS service, one source per provider, so a team with more than one cloud gets one report. This is the first feature that would need credentials, read-only ones, and the security story gets written before the code. It is version two, with its own scope document, not a pull request.
+
+**Retry, bootstrap, signing.** The smaller items in the handoff's not-production-ready table: one retry on flaky checks, RDAP's bootstrap lookup instead of the redirector, a signature on the webhook payload. Each is a half day and none is needed until someone hits the problem.
+
+If you want one of these, open an issue and say what you'd use it for. That's the input that decides the order.
+
 ## What's in here
 
 | Path | What |
